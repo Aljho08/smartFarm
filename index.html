@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart-Farm | Agriculture Dashboard</title>
+  <meta name="description" content="Real-time precision agriculture monitoring and irrigation dashboard.">
+
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Chart.js & Supabase Client -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <!-- ==================== FULL-SCREEN AUTHENTICATION COVER ==================== -->
+  <div class="auth-overlay-page" id="authPageOverlay">
+    <div class="custom-login-page">
+      <!-- Dark Green Header Banner -->
+      <div class="custom-login-header">
+        <div class="brand-logo-title">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M7 20h10"></path>
+            <path d="M10 20c0-5 2-8 8-9"></path>
+            <path d="M14 20c0-7-2-12-8-14 0 6 3 11 8 14z"></path>
+          </svg>
+          <h1>Smart-Farm</h1>
+        </div>
+        <p class="brand-sub">AGRICULTURE PROJECT</p>
+      </div>
+
+      <div class="custom-login-body">
+        <div class="auth-msg-box" id="authGlobalMsg"></div>
+
+        <!-- SCREEN 1: LOGIN CARD -->
+        <div class="custom-login-card active" id="loginCard">
+          <h2 class="card-title-text">Login</h2>
+          <form id="customLoginForm">
+            <div class="custom-form-row">
+              <label for="signInUsername">Email</label>
+              <input type="email" id="signInUsername" placeholder="Email Address" required autocomplete="email" maxlength="40">
+            </div>
+
+            <div class="custom-form-row">
+              <label for="signInPassword">Password</label>
+              <input type="password" id="signInPassword" required autocomplete="current-password" maxlength="16">
+            </div>
+
+            <div class="auth-form-utility-row">
+              <a href="#" id="linkToForgotPassword">Forgot password?</a>
+            </div>
+
+            <button type="submit" class="custom-submit-btn">Sign In</button>
+
+            <div class="card-footer-row">
+              <a href="#" class="signup-link" id="linkToSignUp">Sign Up?</a>
+            </div>
+          </form>
+        </div>
+
+        <!-- SCREEN 2: SIGN UP CARD -->
+        <div class="custom-login-card" id="signUpCard">
+          <h2 class="card-title-text">Sign Up</h2>
+          <form id="customSignUpForm">
+            <div class="custom-form-row">
+              <label for="signUpFullName">Name</label>
+              <input type="text" id="signUpFullName" placeholder="Full Name" required maxlength="40">
+            </div>
+
+            <div class="custom-form-row">
+              <label for="signUpEmail">Email</label>
+              <input type="email" id="signUpEmail" placeholder="Email Address" required maxlength="40">
+            </div>
+
+            <div class="custom-form-row">
+              <label id="signUpSecurityQuestionLabel">Security question</label>
+              <input type="hidden" id="signUpSecurityQuestion">
+              <div class="security-question-picker" id="signUpSecurityQuestionPicker">
+                <button class="security-question-toggle" type="button" aria-expanded="false" aria-controls="signUpSecurityQuestionOptions">
+                  <span>Select a security question</span><span aria-hidden="true">&#9662;</span>
+                </button>
+                <div class="security-question-options" id="signUpSecurityQuestionOptions" role="listbox" aria-label="Security questions" hidden></div>
+              </div>
+            </div>
+
+            <div class="custom-form-row">
+              <label for="signUpSecurityAnswer">Secret answer</label>
+              <input type="text" id="signUpSecurityAnswer" placeholder="Your answer" required maxlength="40" autocomplete="off">
+            </div>
+
+            <div class="custom-form-row">
+              <label for="signUpPassword">Password</label>
+              <input type="password" id="signUpPassword" placeholder="Minimum 6 characters" required maxlength="16">
+            </div>
+
+            <button type="submit" class="custom-submit-btn">Create Account</button>
+
+            <div class="card-footer-row">
+              <a href="#" class="signup-link" id="linkToLogin">Already have an account? Sign In</a>
+            </div>
+          </form>
+        </div>
+
+        <div class="custom-login-card" id="forgotPasswordCard">
+          <h2 class="card-title-text">Forgot Password</h2>
+          <form id="forgotPasswordForm">
+            <div class="custom-form-row">
+              <label for="recoveryEmail">Email</label>
+              <input type="email" id="recoveryEmail" placeholder="Email Address" required autocomplete="email">
+            </div>
+            <button type="button" id="lookupRecoveryQuestionButton" class="custom-submit-btn">Continue</button>
+            <div id="recoveryDetails" hidden>
+              <div class="custom-form-row" id="recoveryQuestionRow">
+                <label id="recoverySecurityQuestionLabel">Security question</label>
+                <input type="hidden" id="recoverySecurityQuestion">
+                <div class="security-question-picker" id="recoverySecurityQuestionPicker">
+                  <button class="security-question-toggle" type="button" aria-expanded="false" aria-controls="recoverySecurityQuestionOptions">
+                    <span>Loading question...</span><span aria-hidden="true">&#9662;</span>
+                  </button>
+                  <div class="security-question-options" id="recoverySecurityQuestionOptions" role="listbox" aria-label="Your recovery question" hidden></div>
+                </div>
+              </div>
+              <div class="custom-form-row" id="recoveryAnswerRow">
+                <label for="recoverySecurityAnswer">Secret answer</label>
+                <input type="text" id="recoverySecurityAnswer" placeholder="Your answer" maxlength="120" autocomplete="off">
+              </div>
+              <p class="recovery-hint" id="recoveryHint"></p>
+              <button type="submit" class="custom-submit-btn">Send Recovery Email</button>
+            </div>
+            <div class="card-footer-row">
+              <a href="#" class="signup-link" id="linkBackToLogin">Back to Sign In</a>
+            </div>
+          </form>
+        </div>
+
+        <div class="custom-login-card" id="resetPasswordCard">
+          <h2 class="card-title-text">Choose a New Password</h2>
+          <form id="resetPasswordForm">
+            <div class="custom-form-row">
+              <label for="newPassword">New password</label>
+              <input type="password" id="newPassword" minlength="6" required autocomplete="new-password">
+            </div>
+            <div class="custom-form-row">
+              <label for="confirmNewPassword">Confirm new password</label>
+              <input type="password" id="confirmNewPassword" minlength="6" required autocomplete="new-password">
+            </div>
+            <button type="submit" class="custom-submit-btn">Update Password</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MAIN IOT DASHBOARD APP ==================== -->
+  <div class="app-container">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="brand-header">
+        <h1 class="brand-title">Smart-Farm</h1>
+        <div class="brand-subtitle">AGRICULTURE DASHBOARD</div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <button class="nav-item active" data-view="dashboard" id="nav-dashboard">
+          <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="9" rx="1.5"></rect><rect x="14" y="3" width="7" height="5" rx="1.5"></rect><rect x="14" y="12" width="7" height="9" rx="1.5"></rect><rect x="3" y="16" width="7" height="5" rx="1.5"></rect></svg>
+          <span>Dashboard</span>
+        </button>
+
+        <button class="nav-item" data-view="reports" id="nav-reports">
+          <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+          <span>Reports</span>
+        </button>
+
+        <button class="nav-item" data-view="irrigation" id="nav-irrigation">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path></svg>
+          <span>Irrigation Control</span>
+        </button>
+
+        <button class="nav-item" data-view="crops" id="nav-crops">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M7 20h10"></path><path d="M10 20c0-5 2-8 8-9"></path><path d="M14 20c0-7-2-12-8-14 0 6 3 11 8 14z"></path></svg>
+          <span>Crops & Insights</span>
+        </button>
+
+        <button class="nav-item" data-view="settings" id="nav-settings">
+          <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+          <span>Settings</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button class="auth-nav-btn nav-item" id="sidebarSignOutBtn">
+          <svg viewBox="0 0 24 24" fill="none" style="width:16px;height:16px;">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+          <span>Sign Out</span>
+        </button>
+
+        <div class="system-status-indicator">
+          <div class="status-dot offline" id="backendStatusDot"></div>
+          <span id="backendStatusText">Checking sensor...</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-wrapper">
+      <header class="top-header">
+        <div class="header-left">
+          <h2 class="header-title" id="headerTitle">Dashboard</h2>
+          <div class="header-subtitle" id="headerSubtitle">Real-time monitoring and control of your smart farm</div>
+        </div>
+
+        <div class="header-right">
+          <button class="notification-btn" id="notificationBtn" type="button" title="Notifications" aria-label="Notifications" aria-expanded="false" aria-controls="notificationsPanel">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+            </svg>
+            <span class="notif-badge" id="notificationsBadge" hidden></span>
+          </button>
+
+          <section class="notifications-panel" id="notificationsPanel" aria-label="Recent notifications" hidden>
+            <div class="notifications-panel-header">
+              <h2>Notifications</h2>
+              <button class="notifications-close-btn" id="closeNotificationsBtn" type="button" aria-label="Close notifications">&times;</button>
+            </div>
+            <div class="notifications-list" id="notificationsList" aria-live="polite"></div>
+          </section>
+
+          <div class="user-profile-badge" id="userProfileBadge">
+            <div class="avatar-wrapper">
+              <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=256" alt="Operator" class="user-avatar-img" id="headerAvatarImg">
+            </div>
+            <span class="user-name-text" id="headerUserName">Guest Operator</span>
+          </div>
+
+          <div class="profile-dropdown-menu" id="profileDropdownMenu">
+            <div class="dropdown-header">
+              <div class="dropdown-user-name" id="dropdownUserName">Guest Operator</div>
+              <div class="dropdown-user-email" id="dropdownUserEmail">Not Logged In</div>
+              <span class="dropdown-user-role" id="dropdownUserRole">Visitor</span>
+            </div>
+            <button class="dropdown-item logout" id="dropdownLogoutBtn">
+              <span>Logout</span>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <div class="date-time-bar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="16" y1="2" x2="16" y2="6"></line>
+          <line x1="8" y1="2" x2="8" y2="6"></line>
+          <line x1="3" y1="10" x2="21" y2="10"></line>
+        </svg>
+        <span id="liveClock">Oct 07, 2026 04:21 PM</span>
+      </div>
+
+      <!-- VIEW 1: DASHBOARD -->
+      <section class="view-panel active" id="view-dashboard">
+        <div class="stat-cards-grid">
+          <div class="stat-card">
+            <div class="stat-header">
+              <span class="stat-title">Soil Moisture (Plot A)</span>
+              <div class="stat-icon-badge badge-moist">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path></svg>
+              </div>
+            </div>
+            <div class="stat-value" id="valMoistureA">-- <span class="stat-unit">%</span></div>
+            <div class="stat-footer"><span class="stat-status-label" id="soilMoistureStatusA">No reading</span></div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-header">
+              <span class="stat-title">Soil Moisture (Plot B)</span>
+              <div class="stat-icon-badge badge-moist">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path></svg>
+              </div>
+            </div>
+            <div class="stat-value" id="valMoistureB">-- <span class="stat-unit">%</span></div>
+            <div class="stat-footer"><span class="stat-status-label" id="soilMoistureStatusB">No reading</span></div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-header">
+              <span class="stat-title">Temperature</span>
+              <div class="stat-icon-badge badge-temp">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"></path></svg>
+              </div>
+            </div>
+            <div class="stat-value" id="valTemperature">-- <span class="stat-unit">°C</span></div>
+            <div class="stat-footer"><span class="stat-status-label" id="temperatureStatus">No reading</span></div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-header">
+              <span class="stat-title">Humidity</span>
+              <div class="stat-icon-badge badge-hum">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path></svg>
+              </div>
+            </div>
+            <div class="stat-value" id="valHumidity">-- <span class="stat-unit">%</span></div>
+            <div class="stat-footer"><span class="stat-status-label" id="humidityStatus">No reading</span></div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-header">
+              <span class="stat-title">Irrigation Status</span>
+              <div class="stat-icon-badge badge-pump">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+              </div>
+            </div>
+            <div class="stat-value" id="valPumpState">--</div>
+            <div class="stat-footer"><span class="stat-status-label" id="pumpStateSubtitle">No saved reading</span></div>
+          </div>
+        </div>
+
+        <div class="middle-row-grid">
+          <div class="chart-card">
+            <div class="chart-card-header">
+              <h3 class="card-title">Soil Moisture Trend (Plots A &amp; B)</h3>
+            </div>
+            <div class="chart-canvas-container">
+              <canvas id="soilMoistureTrendCanvas"></canvas>
+            </div>
+          </div>
+
+          <div class="sensor-list-card">
+            <h3 class="card-title" id="sensorReadingsTitle">Last Sensor Readings</h3>
+            <p class="sensor-reading-time" id="lastSensorReadingTime">No saved readings</p>
+            <div class="sensor-items-wrapper">
+              <div class="sensor-item-row">
+                <span class="sensor-item-name">Soil Moisture (Plot A)</span>
+                <span class="sensor-item-val" id="liveSensorMoistA">--</span>
+              </div>
+              <div class="sensor-item-row">
+                <span class="sensor-item-name">Soil Moisture (Plot B)</span>
+                <span class="sensor-item-val" id="liveSensorMoistB">--</span>
+              </div>
+              <div class="sensor-item-row">
+                <span class="sensor-item-name">Temperature</span>
+                <span class="sensor-item-val" id="liveSensorTemp">--</span>
+              </div>
+              <div class="sensor-item-row">
+                <span class="sensor-item-name">Relative Humidity</span>
+                <span class="sensor-item-val" id="liveSensorHum">--</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 2: IRRIGATION CONTROL -->
+      <section class="view-panel" id="view-irrigation">
+        <div class="irrigation-control-wrapper">
+          <div class="irrigation-outer-panel">
+            <div class="irrigation-inner-card">
+              <h3 class="irrigation-card-title">Irrigation Control</h3>
+              <div class="irrigation-action-buttons" style="margin-top:16px;">
+                <button class="btn-start-irrigation" id="btnStartIrrigation">Start Irrigation (Manual ON)</button>
+                <button class="btn-stop-irrigation" id="btnStopIrrigation" style="margin-top:10px;">Stop Irrigation (Manual OFF)</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 3: REPORTS -->
+      <section class="view-panel" id="view-reports">
+        <div class="reports-wrapper">
+          <h2 class="reports-main-title">Monthly Reports</h2>
+          <div class="reports-filter-row">
+            <label class="filter-group-col" for="reportMonthSelect">
+              <span class="filter-lbl">Report month</span>
+              <select id="reportMonthSelect" class="report-month-select" disabled>
+                <option value="">Loading available months...</option>
+              </select>
+            </label>
+            <button class="export-btn" id="downloadMonthlyReport" type="button" disabled>Download Report (PDF)</button>
+          </div>
+          <p class="reports-status" id="reportsStatus" role="status">Choose a month with saved sensor readings.</p>
+          <div class="monthly-report-summary" aria-live="polite">
+            <article class="monthly-report-stat">
+              <span>Average temperature</span>
+              <strong id="monthlyAverageTemperature">--</strong>
+            </article>
+            <article class="monthly-report-stat">
+              <span>Average humidity</span>
+              <strong id="monthlyAverageHumidity">--</strong>
+            </article>
+            <article class="monthly-report-stat">
+              <span>Average soil moisture</span>
+              <strong id="monthlyAverageSoil">--</strong>
+            </article>
+          </div>
+          <div class="reports-charts-grid">
+            <div class="report-chart-box"><h3>Daily average soil moisture</h3><canvas id="reportSoilCanvas"></canvas></div>
+            <div class="report-chart-box"><h3>Daily average temperature</h3><canvas id="reportTempCanvas"></canvas></div>
+            <div class="report-chart-box"><h3>Daily average humidity</h3><canvas id="reportHumCanvas"></canvas></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 4: CROPS -->
+      <section class="view-panel" id="view-crops">
+        <div class="crop-spotlight-card">
+          <p class="crop-recommendation-label">Recommended crop · based on the last 3 months</p>
+          <div id="cropRecommendation" aria-live="polite" aria-busy="true">
+            <p class="crop-desc-text">Calculating a recommendation from saved temperature readings...</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 5: SETTINGS -->
+      <section class="view-panel" id="view-settings">
+        <div class="settings-wrapper">
+          <div class="settings-action-stack">
+            <button class="settings-large-btn" id="settingsBtnEditProfile" type="button">Edit Profile</button>
+            <button class="settings-large-btn manager-only" id="settingsBtnManageUsers" type="button" hidden>Manage Users</button>
+            <button class="settings-large-btn logout-btn" id="settingsBtnLogout" type="button">Logout</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="view-panel settings-subpage" id="view-edit-profile">
+        <div class="settings-subpage-header">
+          <div>
+            <p class="settings-eyebrow">Settings</p>
+            <h2>Edit Profile</h2>
+          </div>
+          <button class="settings-back-btn" type="button" data-return-settings>Back to Settings</button>
+        </div>
+        <form id="editProfileForm" class="profile-edit-form">
+          <div class="profile-photo-editor">
+            <img id="editProfilePhotoPreview" class="profile-photo-preview" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=256" alt="Profile photo preview">
+            <div class="profile-photo-fields">
+              <label for="editProfilePhoto">Profile photo</label>
+              <input id="editProfilePhoto" type="file" accept="image/jpeg,image/png,image/webp">
+              <p id="profilePhotoStatus" class="profile-photo-hint">Choose a JPG, PNG, or WebP image up to 2 MB.</p>
+            </div>
+          </div>
+          <label for="editProfileName">Full name</label>
+          <input id="editProfileName" name="full_name" type="text" required maxlength="120">
+          <label for="editProfileEmail">Email</label>
+          <input id="editProfileEmail" name="email" type="email" readonly>
+          <label for="profileSecurityQuestion">Security question</label>
+          <select id="profileSecurityQuestion">
+            <option value="first_school" selected>What was the name of your first school?</option>
+            <option value="birth_city">In what city were you born?</option>
+            <option value="first_pet">What was the name of your first pet?</option>
+            <option value="childhood_friend">What was the first name of your childhood best friend?</option>
+          </select>
+          <label for="profileSecurityAnswer">Secret answer</label>
+          <input id="profileSecurityAnswer" type="text" maxlength="120" autocomplete="off" placeholder="Set or replace your answer">
+          <button class="settings-large-btn" type="submit">Save Profile</button>
+        </form>
+      </section>
+
+      <section class="view-panel settings-subpage" id="view-manage-users">
+        <div class="settings-subpage-header">
+          <div>
+            <p class="settings-eyebrow">Settings</p>
+            <h2>Manage Users</h2>
+          </div>
+          <button class="settings-back-btn" type="button" data-return-settings>Back to Settings</button>
+        </div>
+        <p class="users-page-status" id="usersPageStatus" role="status"></p>
+        <form id="manageUsersForm" class="manage-users-form">
+          <div class="users-table-scroll">
+            <table class="user-table users-page-table">
+              <thead>
+                <tr><th>Name</th><th>Email</th><th>Role</th><th>Approval</th><th>Delete</th></tr>
+              </thead>
+              <tbody id="usersTableBody"></tbody>
+            </table>
+          </div>
+          <div class="manage-users-actions">
+            <button class="settings-large-btn" id="saveUsersButton" type="submit">Save Changes</button>
+          </div>
+        </form>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+
+</html>
